@@ -1,4 +1,5 @@
 import { cartModel } from "../models/cartModel";
+import { IOrderItem, orderModel } from "../models/orderModel";
 import { productModel } from "../models/productModel";
 
 interface CreateCartForUser{
@@ -127,4 +128,44 @@ export const deleteAllItemInCart = async ( {userId} :DeleteAllItemInCart ) => {
     cart.totalAmount = 0;
     const updateCarte = await cart.save();
     return {data : updateCarte, statusCode:200};
+}
+
+interface Chekout {
+    userId : string;
+    address : string;
+}
+
+export const chekout = async ({userId,address}:Chekout) => {
+    if(!address){
+        return {data : "Please enter the Address" , statusCode: 400};
+    }
+    const cart = await GetActiveCartForUser({userId});
+
+    const OrderItemss: IOrderItem[] = [];
+    
+    //Loop Cart.items and create itemsOrder
+    for(const item of cart.items) {
+        const product = await productModel.findById(item.product);
+        if(!product){
+            return {data : "Product Not Found",statusCode:400};
+        }
+        const orderItem: IOrderItem = {
+            productTitle: product?.title,
+            productImage: product?.image,
+            unitPrice: item.unitPrice,
+            quantity: item.quantity
+        }
+        OrderItemss.push(orderItem);
+    }
+    const order = await orderModel.create({
+        orderItems : OrderItemss,
+        total: cart.totalAmount,
+        address,
+        userId
+    });
+    await order.save();
+    // update Status Card to be completed : 
+    cart.status = "completed";
+    cart.save();
+    return {data : order , statusCode: 200};
 }
