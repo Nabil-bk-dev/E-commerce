@@ -15,7 +15,7 @@ const validateJWT = (req: ExtendRequest,res:Response,next:NextFunction) => {
     if(!token){
         res.status(403).send("Bearer token is not found");
     }
-    jwt.verify(token , 'KT8EMy0O8vZ6wPJNVcJO8aqds3c5A3zY' , async (err,payload) => {
+    jwt.verify(token , process.env.JWT_SECRET || "" , async (err,payload) => {
         if(err){
             res.status(403).send("Invalid token");
             return;
